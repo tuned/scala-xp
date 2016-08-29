@@ -2,6 +2,7 @@ package workbench.actormodel
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
@@ -19,6 +20,8 @@ object ApplicationOne extends App {
   case class Increment(n: Int) // increment your counter by n
   case object WhatIsYourState // send back your name and counter
   
+  implicit val timeout = Timeout(5 seconds)
+  
   class ActorOne extends Actor {
     val name = "Actor 1"
     var state: Int = 0
@@ -30,9 +33,12 @@ object ApplicationOne extends App {
       case WhatIsYourState =>
         state += 1
         println("State 1: " + state)
-        implicit val timeout = Timeout(5 seconds)
         val result = b ? Increment(2)
-        result foreach println
+        //result foreach println
+        result.onComplete {
+            case Success(value) => println(s"Got the callback, meaning = $value")
+            case Failure(e) => e.printStackTrace
+          }
         Await.result(system.terminate(), Duration(10, TimeUnit.SECONDS))
     }
     
